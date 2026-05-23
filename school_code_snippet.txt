@@ -1,0 +1,412 @@
+void drawRealisticSchool(unsigned int& cubeVAO, Shader& lightingShader, Cylinder& basicCylinder) {
+    drawLeftWing(cubeVAO, lightingShader);
+    drawCenterEntrance(cubeVAO, lightingShader, basicCylinder);
+    drawRightWing(cubeVAO, lightingShader);
+    drawCorridor(cubeVAO, lightingShader);
+    drawFlagpole(cubeVAO, lightingShader, basicCylinder);
+}
+
+void drawWindow(unsigned int& cubeVAO, Shader& lightingShader, glm::vec3 pos, glm::vec3 scale, bool isBackWindow) {
+    // Top frame
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(0, scale.y/2.0f - 0.05f, 0), glm::vec3(0), glm::vec3(scale.x, 0.1f, scale.z));
+    // Bottom frame
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(0, -scale.y/2.0f + 0.05f, 0), glm::vec3(0), glm::vec3(scale.x, 0.1f, scale.z));
+    // Left frame
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(-scale.x/2.0f + 0.05f, 0, 0), glm::vec3(0), glm::vec3(0.1f, scale.y, scale.z));
+    // Right frame
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(scale.x/2.0f - 0.05f, 0, 0), glm::vec3(0), glm::vec3(0.1f, scale.y, scale.z));
+    
+    // Vertical mullion
+    drawCube(cubeVAO, lightingShader, deskMetal, pos, glm::vec3(0), glm::vec3(0.1f, scale.y, scale.z));
+    // Horizontal mullion
+    drawCube(cubeVAO, lightingShader, deskMetal, pos, glm::vec3(0), glm::vec3(scale.x, 0.1f, scale.z));
+
+    // Glass panes - only draw when windows are CLOSED
+    // When open, the window is a clear opening so you can see inside classrooms
+    if (!windowsOpen) {
+        float paneW = scale.x / 2.0f - 0.05f;
+        float paneH = scale.y - 0.1f;
+        
+        // Left pane (fixed)
+        drawCube(cubeVAO, lightingShader, glassCol, pos + glm::vec3(-scale.x/4.0f, 0, 0.01f), glm::vec3(0), glm::vec3(paneW, paneH, 0.02f));
+        // Right pane
+        drawCube(cubeVAO, lightingShader, glassCol, pos + glm::vec3(scale.x/4.0f, 0, -0.01f), glm::vec3(0), glm::vec3(paneW, paneH, 0.02f));
+    }
+}
+
+void drawLeftWing(unsigned int& cubeVAO, Shader& lightingShader) {
+    float cx = -10.0f;
+    float w = 14.0f, d = 8.0f;  // Classroom depth (Z=0 to Z=-8)
+
+    for (int floor = 0; floor <= 1; floor++) {
+        float fY = floor * FL_H;
+        
+        // Floor and ceiling slabs
+        drawCube(cubeVAO, lightingShader, classFloor, glm::vec3(cx, fY + 0.1f, -4.0f), glm::vec3(0), glm::vec3(w, 0.2f, d));
+        if (floor == 0) drawCube(cubeVAO, lightingShader, ceilCol, glm::vec3(cx, fY + FL_H - 0.1f, -4.0f), glm::vec3(0), glm::vec3(w, 0.2f, d));
+
+        // Left Side Solid Wall
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(cx - w/2.0f + 0.1f, fY + FL_H/2.0f, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H, d));
+        if (floor==1) drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cx, fY + FL_H - 0.1f, -4.0f), glm::vec3(0), glm::vec3(w, 0.2f, d)); // Roof
+
+        // Internal dividers between the 3 rooms
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(-12.25f, fY + FL_H/2.0f, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H, d));
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(-7.75f, fY + FL_H/2.0f, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H, d));
+
+        // Front Interior Partition (Z = -0.1f) - Clean continuous wall with door holes
+        float pZ = -0.1f;
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(-16.0f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f)); // Left edge
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(-12.25f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(3.5f, FL_H, 0.2f)); // Between door 1 and 2
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(-7.75f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(3.5f, FL_H, 0.2f)); // Between door 2 and 3
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(-4.0f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f)); // Right edge
+        // Top continuous beam over doors
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(cx, fY + DOOR_H + (FL_H - DOOR_H)/2.0f, pZ), glm::vec3(0), glm::vec3(w, FL_H - DOOR_H, 0.2f));
+
+        // Back Face Grid Structure (Z = -7.9f) - Now EXTERIOR wall with windows
+        float bGridZ = -7.9f;
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(cx, fY + 0.5f, bGridZ), glm::vec3(0), glm::vec3(w, 1.0f, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(cx, fY + FL_H - 0.5f, bGridZ), glm::vec3(0), glm::vec3(w, 1.0f, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(-16.375f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(1.25f, FL_H, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(-12.25f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(-7.75f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(-3.625f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(1.25f, FL_H, 0.2f));
+
+        // Back windows and classroom interiors
+        float bWinZ = -7.85f;
+        float winH = 1.6f, winD = 0.05f;
+        for (float wx : {-14.5f, -10.0f, -5.5f}) {
+            drawWindow(cubeVAO, lightingShader, glm::vec3(wx, fY + FL_H/2.0f, bWinZ), glm::vec3(2.5f, winH, winD), true);
+            
+            // Thick exterior window frames - BACK (protruding concrete)
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx, fY + FL_H/2.0f + winH/2.0f + 0.15f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(2.9f, 0.3f, 0.3f));
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx, fY + FL_H/2.0f - winH/2.0f - 0.15f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(2.9f, 0.3f, 0.3f));
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx - 1.3f, fY + FL_H/2.0f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(0.3f, winH + 0.6f, 0.3f));
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx + 1.3f, fY + FL_H/2.0f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(0.3f, winH + 0.6f, 0.3f));
+
+            drawClassroomInterior(cubeVAO, lightingShader, wx, -4.0f, fY + 0.2f);
+        }
+    }
+}
+
+void drawCenterEntrance(unsigned int& cubeVAO, Shader& lightingShader, Cylinder& basicCylinder) {
+    // --- MAIN BUILDING BEHIND PORCH ---
+    // Floor Slabs (Z=0 to Z=-8, depth 8, center Z=-4, length Z=1.6 center Z=-1??)
+    // The front part Z=-1 is fine, just let corridor do Z=0 to Z=3.
+    // Ground floor
+    drawCube(cubeVAO, lightingShader, classFloor, glm::vec3(0.0f, 0.1f, -4.0f), glm::vec3(0), glm::vec3(5.6f, 0.2f, 8.0f));
+    // First floor slab with hole for stairs
+    drawCube(cubeVAO, lightingShader, classFloor, glm::vec3(-1.9f, FL_H + 0.1f, -4.0f), glm::vec3(0), glm::vec3(1.8f, 0.2f, 8.0f)); // Left part
+    drawCube(cubeVAO, lightingShader, ceilCol, glm::vec3(-1.9f, FL_H - 0.1f, -4.0f), glm::vec3(0), glm::vec3(1.8f, 0.2f, 8.0f));
+    drawCube(cubeVAO, lightingShader, classFloor, glm::vec3( 1.9f, FL_H + 0.1f, -4.0f), glm::vec3(0), glm::vec3(1.8f, 0.2f, 8.0f)); // Right part
+    drawCube(cubeVAO, lightingShader, ceilCol, glm::vec3( 1.9f, FL_H - 0.1f, -4.0f), glm::vec3(0), glm::vec3(1.8f, 0.2f, 8.0f));
+
+    // Solid Side Walls (Z=0 to Z=-8)
+    drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(-2.9f, FL_H, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H*2.0f, 8.0f));
+    drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3( 2.9f, FL_H, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H*2.0f, 8.0f));
+    drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(0.0f, FL_H*2.0f - 0.1f, -4.0f), glm::vec3(0), glm::vec3(6.0f, 0.2f, 8.0f)); // Roof
+
+    // Back wall grid structure (Z = -7.9f) - EXTERIOR wall (staircase back wall)
+    float bGridZ = -7.9f;
+    for (int floor = 0; floor <= 1; floor++) {
+        float fY = floor * FL_H;
+        // Solid wall for center section (staircase area)
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(0.0f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(6.0f, FL_H, 0.2f));
+    }
+
+    // Ground Floor Front Wall (Shifted to Z = 2.9f)
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(0.0f, 3.1f, 2.9f), glm::vec3(0), glm::vec3(6.0f, 1.0f, 0.2f)); // Top strip
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(-2.2f, FL_H/2.0f, 2.9f), glm::vec3(0), glm::vec3(1.6f, FL_H, 0.2f)); // Thick Left pillar sealing to door
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3( 2.2f, FL_H/2.0f, 2.9f), glm::vec3(0), glm::vec3(1.6f, FL_H, 0.2f)); // Thick Right pillar sealing to door
+
+    // Grand Entrance Doors (Shifted to Z = 2.85f)
+    drawCube(cubeVAO, lightingShader, doorCol, glm::vec3(-0.95f, 1.3f, 2.85f), glm::vec3(0, 80, 0), glm::vec3(0.9f, 2.6f, 0.05f));
+    drawCube(cubeVAO, lightingShader, doorCol, glm::vec3( 0.95f, 1.3f, 2.85f), glm::vec3(0, -80, 0), glm::vec3(0.9f, 2.6f, 0.05f));
+
+    // Internal Grand Staircase (Starts from Z=-1.8, going down to ground floor inside the Z<0 space)
+    int inSteps = 16;
+    float inRun = 4.4f / inSteps;
+    float inRise = FL_H / inSteps;
+    glm::vec3 stairWhite = glm::vec3(0.95f, 0.95f, 0.95f);
+    for(int i=0; i<inSteps; i++) {
+        drawCube(cubeVAO, lightingShader, stairWhite, glm::vec3(0.0f, inRise*i + inRise/2.0f, -1.8f - inRun*i - inRun/2.0f), glm::vec3(0), glm::vec3(2.0f, inRise, inRun));
+    }
+
+    // First Floor Front Wall (Shifted to Z = 2.9f)
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(0.0f, FL_H + 0.5f, 2.9f), glm::vec3(0), glm::vec3(6.0f, 1.0f, 0.2f)); // Balcony rim below split windows
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(0.0f, FL_H*2.0f - 0.4f, 2.9f), glm::vec3(0), glm::vec3(6.0f, 0.8f, 0.2f)); // Roof rim
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(-2.55f, FL_H + FL_H/2.0f, 2.9f), glm::vec3(0), glm::vec3(0.9f, FL_H, 0.2f)); // Left side
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3( 2.55f, FL_H + FL_H/2.0f, 2.9f), glm::vec3(0), glm::vec3(0.9f, FL_H, 0.2f)); // Right side
+    drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(0.0f, FL_H + FL_H/2.0f, 2.9f), glm::vec3(0), glm::vec3(1.1f, FL_H, 0.2f)); // Center pillar
+
+    // Now draw two windows instead of one large one
+    float cwX[2] = {-1.3f, 1.3f};
+    for(int i=0; i<2; i++) {
+        drawWindow(cubeVAO, lightingShader, glm::vec3(cwX[i], FL_H + 1.8f, 2.85f), glm::vec3(1.6f, 1.6f, 0.05f), false);
+        // frames (Shifted visually +3.0)
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cwX[i], FL_H + 1.8f + 0.8f + 0.15f, 2.95f), glm::vec3(0), glm::vec3(2.0f, 0.3f, 0.3f)); // Top
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cwX[i], FL_H + 1.8f - 0.8f - 0.15f, 2.95f), glm::vec3(0), glm::vec3(2.0f, 0.3f, 0.3f)); // Bottom
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cwX[i] - 0.85f, FL_H + 1.8f, 2.95f), glm::vec3(0), glm::vec3(0.3f, 2.2f, 0.3f)); // Left
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cwX[i] + 0.85f, FL_H + 1.8f, 2.95f), glm::vec3(0), glm::vec3(0.3f, 2.2f, 0.3f)); // Right
+    }
+
+    // --- PORCH --- (Shifted +3.0)
+    // Porch Roof Floor Slab
+    drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(0.0f, FL_H - 0.2f, 4.5f), glm::vec3(0), glm::vec3(6.0f, 0.4f, 3.2f));
+    // 4 Porch Pillars
+    for(float px : {-2.6f, -0.9f, 0.9f, 2.6f}) {
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(px, FL_H/2.0f - 0.2f, 5.5f), glm::vec3(0), glm::vec3(0.4f, FL_H, 0.4f));
+    }
+
+    // Entrance stairs (Shifted +3.0 -> starts around 7.0)
+    int steps = 6;
+    float stepRun = 2.5f / steps;
+    float stepRise = 0.6f / steps; 
+    for (int i=0; i<steps; i++) {
+        drawCube(cubeVAO, lightingShader, deskMetal, glm::vec3(0.0f, stepRise*i + stepRise/2.0f, 7.0f - stepRun*i), glm::vec3(0), glm::vec3(6.0f, stepRise, stepRun));
+    }
+
+    // Signboard blocks
+    glm::vec3 signCol = glm::vec3(0.95f, 0.95f, 0.95f); // White/light grey like the image
+    // Bengali text signboard (Shifted +3.0)
+    drawCube(cubeVAO, lightingShader, signCol, glm::vec3(0.0f, FL_H + 0.4f, 6.0f), glm::vec3(0), glm::vec3(5.0f, 0.8f, 0.1f));
+    // English text signboard (Shifted +3.0)
+    drawCube(cubeVAO, lightingShader, signCol, glm::vec3(0.0f, 2.0f*FL_H + 0.6f, 2.9f), glm::vec3(0), glm::vec3(5.6f, 1.0f, 0.1f));
+    drawCube(cubeVAO, lightingShader, signCol, glm::vec3(0.0f, 2.0f*FL_H + 0.6f, 2.9f), glm::vec3(0), glm::vec3(5.6f, 1.0f, 0.1f));
+}
+
+
+void drawRightWing(unsigned int& cubeVAO, Shader& lightingShader) {
+    float cx = 11.0f, w = 16.0f;
+    float d = 8.0f;  // Classroom depth (Z=0 to Z=-8)
+    
+    for (int floor = 0; floor <= 1; floor++) {
+        float fY = floor * FL_H;
+        
+        // Classroom floor and ceiling
+        drawCube(cubeVAO, lightingShader, classFloor, glm::vec3(cx, fY + 0.1f, -4.0f), glm::vec3(0), glm::vec3(w, 0.2f, d));
+        if (floor==0) drawCube(cubeVAO, lightingShader, ceilCol, glm::vec3(cx, fY + FL_H - 0.1f, -4.0f), glm::vec3(0), glm::vec3(w, 0.2f, d));
+
+        // Right Side Solid Wall 
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cx + w/2.0f - 0.1f, fY + FL_H/2.0f, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H, d));
+        // Roof
+        if (floor==1) drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(cx, fY + FL_H - 0.1f, -4.0f), glm::vec3(0), glm::vec3(w, 0.2f, d));
+        
+        // Inner room dividers
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(7.75f, fY + FL_H/2.0f, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H, d));
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(12.25f, fY + FL_H/2.0f, -4.0f), glm::vec3(0), glm::vec3(0.2f, FL_H, d));
+
+        // Front Interior Partition (Z = -0.1f) - Clean continuous wall with door holes
+        float pZ = -0.1f;
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(4.0f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f)); // Left edge
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(7.75f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(3.5f, FL_H, 0.2f)); // Between door 1 and 2
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(12.25f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(3.5f, FL_H, 0.2f)); // Between door 2 and 3
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(17.0f, fY + FL_H/2.0f, pZ), glm::vec3(0), glm::vec3(4.0f, FL_H, 0.2f)); // Right edge spans 15.0 to 19.0
+        // Top continuous beam over doors
+        drawCube(cubeVAO, lightingShader, intWallCol, glm::vec3(cx, fY + DOOR_H + (FL_H - DOOR_H)/2.0f, pZ), glm::vec3(0), glm::vec3(w, FL_H - DOOR_H, 0.2f));
+
+        // Back wall grid (Z = -7.9f) - Now EXTERIOR wall with windows
+        float bGridZ = -7.9f;
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(cx, fY + 0.5f, bGridZ), glm::vec3(0), glm::vec3(w, 1.0f, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(cx, fY + FL_H - 0.5f, bGridZ), glm::vec3(0), glm::vec3(w, 1.0f, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(3.625f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(1.25f, FL_H, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(7.75f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(12.25f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(2.0f, FL_H, 0.2f));
+        drawCube(cubeVAO, lightingShader, brickCol, glm::vec3(17.375f, fY + FL_H/2.0f, bGridZ), glm::vec3(0), glm::vec3(3.25f, FL_H, 0.2f));
+
+        // Back windows and classroom interiors
+        float bWinZ = -7.85f;
+        float winH = 1.6f, winD = 0.05f;
+        for (float wx : {5.5f, 10.0f, 14.5f}) {
+            drawWindow(cubeVAO, lightingShader, glm::vec3(wx, fY + FL_H/2.0f, bWinZ), glm::vec3(2.5f, winH, winD), true);
+            
+            // Thick exterior window frames - BACK (protruding concrete, visible from backside)
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx, fY + FL_H/2.0f + winH/2.0f + 0.15f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(2.9f, 0.3f, 0.3f)); // Top
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx, fY + FL_H/2.0f - winH/2.0f - 0.15f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(2.9f, 0.3f, 0.3f)); // Bottom
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx - 1.3f, fY + FL_H/2.0f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(0.3f, winH + 0.6f, 0.3f)); // Left
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(wx + 1.3f, fY + FL_H/2.0f, bWinZ - 0.1f), glm::vec3(0), glm::vec3(0.3f, winH + 0.6f, 0.3f)); // Right
+
+            drawClassroomInterior(cubeVAO, lightingShader, wx, -4.0f, fY + 0.2f);
+        }
+    }
+
+    // Right Wing Entrance Steps (shifted +3.0 in Z for new corridor front)
+    int rSteps = 4;
+    float rStepRise = 0.5f / rSteps;
+    float rStepRun = 1.5f / rSteps;
+    for (int i = 0; i < rSteps; i++) {
+        drawCube(cubeVAO, lightingShader, extWallCol,
+            glm::vec3(7.5f, rStepRise * i + rStepRise / 2.0f, 3.0f + rStepRun * i + rStepRun / 2.0f),
+            glm::vec3(0), glm::vec3(3.0f, rStepRise, rStepRun));
+    }
+}
+
+void drawFlagpole(unsigned int& cubeVAO, Shader& lightingShader, Cylinder& basicCylinder) {
+    float baseX = 0.0f;
+    float baseZ = 12.0f;
+    float y = 0.1f;
+    
+    // Tiered base
+    glm::mat4 bm = glm::mat4(1.0f);
+    bm = glm::translate(bm, glm::vec3(baseX, y, baseZ));
+    bm = glm::scale(bm, glm::vec3(1.5f, 0.2f, 1.5f));
+    basicCylinder.drawCylinder(lightingShader, bm, extWallCol);
+    
+    y += 0.2f;
+    bm = glm::mat4(1.0f);
+    bm = glm::translate(bm, glm::vec3(baseX, y, baseZ));
+    bm = glm::scale(bm, glm::vec3(1.0f, 0.2f, 1.0f));
+    basicCylinder.drawCylinder(lightingShader, bm, extWallCol);
+    
+    // Pole
+    y += 0.1f;
+    float poleH = 10.0f;
+    bm = glm::mat4(1.0f);
+    bm = glm::translate(bm, glm::vec3(baseX, y + poleH/2.0f, baseZ));
+    bm = glm::scale(bm, glm::vec3(0.05f, poleH, 0.05f));
+    basicCylinder.drawCylinder(lightingShader, bm, glm::vec3(0.8f)); 
+    
+    // Bangladesh Flag
+    glm::vec3 flagGreen = glm::vec3(0.0f, 0.4f, 0.2f);
+    glm::vec3 flagRed = glm::vec3(0.8f, 0.1f, 0.1f);
+    
+    drawCube(cubeVAO, lightingShader, flagGreen, glm::vec3(baseX + 1.25f, y + poleH - 1.0f, baseZ), glm::vec3(0, 5, 0), glm::vec3(2.5f, 1.5f, 0.02f));
+    
+    glm::mat4 fm = glm::mat4(1.0f);
+    fm = glm::translate(fm, glm::vec3(baseX + 1.0f, y + poleH - 1.0f, baseZ + 0.02f));
+        fm = glm::rotate(fm, glm::radians(90.0f), glm::vec3(1,0,0));
+    fm = glm::scale(fm, glm::vec3(0.5f, 0.03f, 0.5f)); 
+    basicCylinder.drawCylinder(lightingShader, fm, flagRed);
+}
+
+// ==== INTERIOR FURNITURE ====
+void drawClassroomInterior(unsigned int& cubeVAO, Shader& lightingShader, float cX, float zCenter, float yBase) {
+    // Whiteboard at the BACK wall (-Z direction from room center)
+    float bZ = zCenter - 3.8f; 
+    drawCube(cubeVAO, lightingShader, boardCol, glm::vec3(cX, yBase + 1.6f, bZ), glm::vec3(0), glm::vec3(3.0f, 1.4f, 0.05f));
+    
+    // Teacher Desk
+    drawCube(cubeVAO, lightingShader, deskWood, glm::vec3(cX - 1.0f, yBase + 0.6f, bZ + 1.5f), glm::vec3(0), glm::vec3(2.0f, 0.05f, 1.0f));
+    drawCube(cubeVAO, lightingShader, deskMetal, glm::vec3(cX - 1.0f - 0.9f, yBase + 0.3f, bZ + 1.0f), glm::vec3(0), glm::vec3(0.1f, 0.6f, 0.1f));
+    drawCube(cubeVAO, lightingShader, deskMetal, glm::vec3(cX - 1.0f + 0.9f, yBase + 0.3f, bZ + 1.0f), glm::vec3(0), glm::vec3(0.1f, 0.6f, 0.1f));
+
+    // Student Desks Grid (Facing the back wall)
+    float startZ = zCenter - 1.0f; 
+    for (int row=0; row<3; row++) {
+        float dZ = startZ + row*1.8f; // Desks get closer to the front windows (+Z)
+        for (int col=-1; col<=1; col++) {
+            float dX = cX + (col * 1.2f);
+            drawDesk(cubeVAO, lightingShader, glm::vec3(dX, yBase, dZ), 180.0f); // Rotate 180 degrees to face back
+        }
+    }
+}
+
+void drawDesk(unsigned int& cubeVAO, Shader& lightingShader, glm::vec3 pos, float rotY) {
+    glm::vec3 rotVec = glm::vec3(0, rotY, 0);
+    // Desk surface
+    drawCube(cubeVAO, lightingShader, deskWood, pos + glm::vec3(0, 0.5f, 0), rotVec, glm::vec3(1.0f, 0.05f, 0.6f));
+    
+    // To handle rotation for legs and benches properly while using drawCube, it's easier to just assume symmetrical or approximate visually
+    // since my simple drawCube applies rotation relative to the cube's local center.
+    // Instead of doing complex math, I'll pass the rotation and just offset symmetrically!
+    
+    // desk legs (approximate for any rotation since it's a small square)
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(-0.4f, 0.25f, -0.2f), rotVec, glm::vec3(0.05f, 0.5f, 0.05f));
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3( 0.4f, 0.25f, -0.2f), rotVec, glm::vec3(0.05f, 0.5f, 0.05f));
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(-0.4f, 0.25f,  0.2f), rotVec, glm::vec3(0.05f, 0.5f, 0.05f));
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3( 0.4f, 0.25f,  0.2f), rotVec, glm::vec3(0.05f, 0.5f, 0.05f));
+    
+    // Student bench (offset based on rotation!)
+    float benchDir = (rotY > 90.0f) ? 1.0f : -1.0f; 
+    drawCube(cubeVAO, lightingShader, lockerCol, pos + glm::vec3(0, 0.3f, benchDir * 0.6f), rotVec, glm::vec3(0.6f, 0.05f, 0.5f)); 
+    drawCube(cubeVAO, lightingShader, lockerCol, pos + glm::vec3(0, 0.6f, benchDir * 0.8f), rotVec, glm::vec3(0.6f, 0.5f, 0.05f)); 
+}
+
+
+// ==== DOOR HELPER ====
+void drawDoor(unsigned int& cubeVAO, Shader& lightingShader, glm::vec3 pos, float doorWidth, float doorHeight, bool opens) {
+    // Door frame (dark wood surround)
+    float frameT = 0.08f;
+    // Top frame
+    drawCube(cubeVAO, lightingShader, doorFrame, pos + glm::vec3(0, doorHeight/2.0f + frameT/2.0f, 0), glm::vec3(0), glm::vec3(doorWidth + frameT*2, frameT, 0.22f));
+    // Left frame
+    drawCube(cubeVAO, lightingShader, doorFrame, pos + glm::vec3(-doorWidth/2.0f - frameT/2.0f, 0, 0), glm::vec3(0), glm::vec3(frameT, doorHeight, 0.22f));
+    // Right frame
+    drawCube(cubeVAO, lightingShader, doorFrame, pos + glm::vec3(doorWidth/2.0f + frameT/2.0f, 0, 0), glm::vec3(0), glm::vec3(frameT, doorHeight, 0.22f));
+
+    // Door panel (hinged on left side)
+    if (opens && doorOpen) {
+        // Open door - rotated 80 degrees around left hinge
+        drawCube(cubeVAO, lightingShader, doorCol, pos + glm::vec3(-doorWidth/2.0f + 0.02f, 0, -0.4f), glm::vec3(0, 80, 0), glm::vec3(doorWidth, doorHeight, 0.06f));
+    } else {
+        // Closed door
+        drawCube(cubeVAO, lightingShader, doorCol, pos, glm::vec3(0), glm::vec3(doorWidth, doorHeight, 0.06f));
+    }
+
+    // Door handle (small knob)
+    drawCube(cubeVAO, lightingShader, deskMetal, pos + glm::vec3(doorWidth/2.0f - 0.15f, 0, 0.04f), glm::vec3(0), glm::vec3(0.06f, 0.12f, 0.06f));
+}
+
+// ==== CORRIDOR ====
+void drawCorridor(unsigned int& cubeVAO, Shader& lightingShader) {
+    // Corridor runs IN FRONT of the building from Z = 0.0 to Z = 3.0
+    // The old front wall at Z = -0.1 now has doors into each classroom
+    // A new exterior front wall is at Z = 3.0
+
+    float fullLeft  = -17.0f;
+    float fullRight =  19.0f;
+    float corrW     = fullRight - fullLeft;   // 36 units
+    float corrX     = (fullLeft + fullRight) / 2.0f; // 1.0
+
+    for (int floor = 0; floor <= 1; floor++) {
+        float fY = floor * FL_H;
+
+        // --- Corridor Floor ---
+        drawCube(cubeVAO, lightingShader, corrFloor,
+            glm::vec3(corrX, fY + 0.12f, CORR_Z_CENTER),
+            glm::vec3(0), glm::vec3(corrW, 0.05f, CORR_W));
+
+        // --- Corridor Ceiling ---
+        drawCube(cubeVAO, lightingShader, ceilCol,
+            glm::vec3(corrX, fY + FL_H - 0.12f, CORR_Z_CENTER),
+            glm::vec3(0), glm::vec3(corrW, 0.05f, CORR_W));
+
+        // --- New Exterior Front Wall at Z = 3.0 ---
+        // Solid wall with windows
+        float frontZ = CORR_Z_FRONT; // 3.0
+
+        // --- Open Pillared Corridor Facade ---
+        
+        // Top continuous beam to support the roof
+        float beamH = 0.8f;
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(-10.0f, fY + FL_H - beamH/2.0f, frontZ), glm::vec3(0), glm::vec3(14.0f, beamH, 0.4f)); // Left Wing Rim
+        drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(11.0f, fY + FL_H - beamH/2.0f, frontZ), glm::vec3(0), glm::vec3(16.0f, beamH, 0.4f));  // Right Wing Rim
+
+        // Elegant Standalone Pillars
+        float pW = 0.6f, pD = 0.6f;
+        // Left Wing Pillars (Span: -17 to -3)
+        for (float px : {-16.7f, -13.3f, -10.0f, -6.6f, -3.3f}) {
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(px, fY + FL_H/2.0f, frontZ), glm::vec3(0), glm::vec3(pW, FL_H, pD));
+        }
+        // Right Wing Pillars (Span: 3 to 19)
+        for (float px : {3.3f, 7.15f, 11.0f, 14.85f, 18.7f}) {
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(px, fY + FL_H/2.0f, frontZ), glm::vec3(0), glm::vec3(pW, FL_H, pD));
+        }
+
+        // Waist-high safety railing for the upper floor corridor
+        if (floor == 1) {
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(-10.0f, fY + 0.6f, frontZ), glm::vec3(0), glm::vec3(14.0f, 1.2f, 0.2f)); // Left Wing
+            drawCube(cubeVAO, lightingShader, extWallCol, glm::vec3(11.0f, fY + 0.6f, frontZ), glm::vec3(0), glm::vec3(16.0f, 1.2f, 0.2f));  // Right Wing
+        }
+
+        // --- Doors in old front wall (Z = -0.1) for each classroom ---
+        float allDoors[] = {-14.5f, -10.0f, -5.5f, 5.5f, 10.0f, 14.5f};
+        for (float dx : allDoors) {
+            float aboveDoorH = FL_H - DOOR_H - 0.08f;
+            float pZ = -0.1f;
+
+            // Draw the door
+            drawDoor(cubeVAO, lightingShader, glm::vec3(dx, fY + DOOR_H/2.0f, pZ), DOOR_W, DOOR_H, true);
+
+        }
+    }
+}
